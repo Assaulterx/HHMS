@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Management System</title>
+    <!-- 1. Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 2. Load Inter font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 3. Load icons (Lucide) -->
+    <script src="https://unpkg.com/lucide-react@latest/dist/lucide-react.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom styles for the app */
+        .page {
+            display: none; /* Hidden by default */
+        }
+        .page.active {
+            display: block; /* Shown when active */
+        }
+        /* Custom loader */
+        .loader {
+            border-top-color: #3498db;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Global Loading Overlay -->
+    <div id="global-loader" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
+        <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24"></div>
+    </div>
+
+    <!-- Global Message Banner -->
+    <div id="message-banner" class="fixed top-5 right-5 z-50 p-4 rounded-md shadow-lg text-white" style="display: none;">
+        <span id="message-text"></span>
+    </div>
+
+    <div class="flex h-screen">
+        <!-- Sidebar Navigation -->
+        <nav class="w-64 bg-white shadow-md">
+            <div class="p-6">
+                <h1 class="text-2xl font-bold text-blue-600 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    HMS Portal
+                </h1>
+            </div>
+            <ul class="mt-6">
+                <li class="nav-link active" data-page="dashboard">
+                    <a href="#" class="flex items-center px-6 py-4 text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-link" data-page="patients">
+                    <a href="#" class="flex items-center px-6 py-4 text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        Patients
+                    </a>
+                </li>
+                <li class="nav-link" data-page="appointments">
+                    <a href="#" class="flex items-center px-6 py-4 text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
+                        Appointments
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 p-8 overflow-auto">
+
+            <!-- =======================
+                 DASHBOARD PAGE
+            ======================== -->
+            <div id="dashboard" class="page active">
+                <h2 class="text-3xl font-bold mb-6">Dashboard</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-semibold text-gray-500">Total Patients</h3>
+                        <p id="stat-total-patients" class="text-4xl font-bold mt-2">0</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-semibold text-gray-500">Today's Appointments</h3>
+                        <p id="stat-today-appointments" class="text-4xl font-bold mt-2">0</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-semibold text-gray-500">Available Staff</h3>
+                        <p id="stat-total-staff" class="text-4xl font-bold mt-2">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- =======================
+                 PATIENTS PAGE
+            ======================== -->
+            <div id="patients" class="page">
+                <h2 class="text-3xl font-bold mb-6">Patient Management</h2>
+                
+                <!-- Add Patient Form -->
+                <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                    <h3 class="text-xl font-semibold mb-4">Register New Patient</h3>
+                    <form id="add-patient-form" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label for="firstName" class="block text-sm font-medium text-gray-700">First Name</label>
+                            <input type="text" id="firstName" name="firstName" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="lastName" class="block text-sm font-medium text-gray-700">Last Name</label>
+                            <input type="text" id="lastName" name="lastName" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="dob" class="block text-sm font-medium text-gray-700">Date of Birth</label>
+                            <input type="date" id="dob" name="dob" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="contact" class="block text-sm font-medium text-gray-700">Contact Number</label>
+                            <input type="tel" id="contact" name="contact" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="address" class="block text-sm font-medium text-gray-700">Address</label>
+                            <input type="text" id="address" name="address" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="md:col-span-3 text-right">
+                            <button type="submit" class="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                Register Patient
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Patient List Table -->
+                <div class="bg-white rounded-lg shadow-md">
+                    <div class="p-4 border-b">
+                        <h3 class="text-xl font-semibold">All Patients</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Full Name</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DOB</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+                                </tr>
+                            </thead>
+                            <tbody id="patient-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- Rows will be inserted here by JavaScript -->
+                                <tr>
+                                    <td colspan="5" class="px-6 py-4 text-center text-gray-500">No patients found.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- =======================
+                 APPOINTMENTS PAGE
+            ======================== -->
+            <div id="appointments" class="page">
+                <h2 class="text-3xl font-bold mb-6">Appointment Scheduler</h2>
+
+                <!-- Add Appointment Form -->
+                <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                    <h3 class="text-xl font-semibold mb-4">Book New Appointment</h3>
+                    <form id="add-appointment-form" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label for="appt-patient" class="block text-sm font-medium text-gray-700">Patient</label>
+                            <select id="appt-patient" name="patientId" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Select a patient</option>
+                                <!-- Options populated by JS -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="appt-staff" class="block text-sm font-medium text-gray-700">Doctor / Staff</label>
+                            <select id="appt-staff" name="staffId" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Select staff</option>
+                                <!-- Options populated by JS -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="appt-date" class="block text-sm font-medium text-gray-700">Date</label>
+                            <input type="date" id="appt-date" name="date" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="appt-time" class="block text-sm font-medium text-gray-700">Time</label>
+                            <input type="time" id="appt-time" name="time" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="appt-reason" class="block text-sm font-medium text-gray-700">Reason for Visit</label>
+                            <input type="text" id="appt-reason" name="reason" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="md:col-span-3 text-right">
+                            <button type="submit" class="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                Book Appointment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Appointment List Table -->
+                <div class="bg-white rounded-lg shadow-md">
+                    <div class="p-4 border-b">
+                        <h3 class="text-xl font-semibold">Upcoming Appointments</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Appt. ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="appointment-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- Rows will be inserted here by JavaScript -->
+                                <tr>
+                                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">No appointments found.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <script type="text/javascript">
+        // ========================================================================
+        // !! IMPORTANT !!
+        // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
+        // ========================================================================
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwL4UID19QkXCwBLUW8DZeUpUnEI2OTiwdCyLf2vGpfGa5wQ95A9QkpGk6lryhSohBq/exec'; // <-- PASTE URL HERE
+
+        // --- GLOBAL STATE ---
+        // We use a simple state object to cache data from Google Sheets
+        const AppState = {
+            patients: [],
+            appointments: [],
+            staff: []
+        };
+
+        // --- DOM Elements ---
+        const pages = document.querySelectorAll('.page');
+        const navLinks = document.querySelectorAll('.nav-link');
+        const loader = document.getElementById('global-loader');
+        const messageBanner = document.getElementById('message-banner');
+        const messageText = document.getElementById('message-text');
+
+        // --- API FUNCTIONS ---
+
+        /**
+         * Shows the global loading spinner.
+         */
+        function showLoader() {
+            loader.style.display = 'flex';
+        }
+
+        /**
+         * Hides the global loading spinner.
+         */
+        function hideLoader() {
+            loader.style.display = 'none';
+        }
+
+        /**
+         * Shows a success or error message banner.
+         * @param {string} message - The text to display.
+         * @param {boolean} [isError=false] - True for error (red), false for success (green).
+         */
+        function showMessage(message, isError = false) {
+            messageText.textContent = message;
+            messageBanner.className = `fixed top-5 right-5 z-50 p-4 rounded-md shadow-lg text-white ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+            messageBanner.style.display = 'block';
+
+            // Hide after 3 seconds
+            setTimeout(() => {
+                messageBanner.style.display = 'none';
+            }, 3000);
+        }
+
+        /**
+         * Fetches data from the Google Apps Script backend.
+         * @param {string} action - The action to perform (e.g., 'getPatients', 'getStaff').
+         */
+        async function fetchData(action) {
+            if (!GAS_WEB_APP_URL) {
+                showMessage('Error: Google Apps Script URL is not set.', true);
+                return;
+            }
+
+            showLoader();
+            try {
+                const response = await fetch(`${GAS_WEB_APP_URL}?action=${action}`, {
+                    method: 'GET',
+                    redirect: 'follow'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    return result.data;
+                } else {
+                    throw new Error(result.message || 'Failed to fetch data.');
+                }
+            } catch (error) {
+                console.error(`Error fetching ${action}:`, error);
+                showMessage(`Error: ${error.message}`, true);
+            } finally {
+                hideLoader();
+            }
+        }
+
+        /**
+         * Posts data to the Google Apps Script backend.
+         * @param {object} payload - The data to send (must include an 'action' property).
+         */
+        async function postData(payload) {
+            if (!GAS_WEB_APP_URL) {
+                showMessage('Error: Google Apps Script URL is not set.', true);
+                return;
+            }
+
+            showLoader();
+            try {
+                const response = await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8', // Apps Script POST requirement
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage(result.message || 'Operation successful!', false);
+                    return result.data;
+                } else {
+                    throw new Error(result.message || 'Operation failed.');
+                }
+            } catch (error) {
+                console.error(`Error posting data for ${payload.action}:`, error);
+                showMessage(`Error: ${error.message}`, true);
+            } finally {
+                hideLoader();
+            }
+        }
+
+
+        // --- PAGE NAVIGATION ---
+        
+        /**
+         * Handles navigation link clicks to show/hide pages.
+         */
+        function handleNavClick(e) {
+            e.preventDefault();
+            const link = e.currentTarget;
+            const pageId = link.dataset.page;
+
+            // Don't do anything if clicking the active link
+            if (link.classList.contains('active')) {
+                return;
+            }
+
+            // Update active link
+            navLinks.forEach(nav => nav.classList.remove('active'));
+            link.classList.add('active');
+
+            // Update active page
+            pages.forEach(page => {
+                if (page.id === pageId) {
+                    page.classList.add('active');
+                } else {
+                    page.classList.remove('active');
+                }
+            });
+        }
+        navLinks.forEach(link => link.addEventListener('click', handleNavClick));
+
+
+        // --- DATA RENDERING FUNCTIONS ---
+
+        /**
+         * Populates the patient table with data.
+         */
+        function renderPatientTable() {
+            const tableBody = document.getElementById('patient-table-body');
+            if (AppState.patients.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No patients found.</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = AppState.patients.map(patient => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${patient.PatientID}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${patient.FirstName} ${patient.LastName}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${patient.DOB}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${patient.Contact}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${patient.Address}</td>
+                </tr>
+            `).join('');
+        }
+
+        /**
+         * Populates the appointment table with data.
+         * Uses cached patient and staff data to show names.
+         */
+        function renderAppointmentTable() {
+            const tableBody = document.getElementById('appointment-table-body');
+            if (AppState.appointments.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No appointments found.</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = AppState.appointments.map(appt => {
+                // Find patient and staff names from cached data
+                const patient = AppState.patients.find(p => p.PatientID === appt.PatientID);
+                const staff = AppState.staff.find(s => s.StaffID === appt.StaffID);
+                
+                const patientName = patient ? `${patient.FirstName} ${patient.LastName}` : `ID: ${appt.PatientID}`;
+                const staffName = staff ? `${staff.FirstName} ${staff.LastName}` : `ID: ${appt.StaffID}`;
+
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${appt.AppointmentID}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${patientName}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${staffName}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${new Date(appt.Date).toLocaleDateString()} ${appt.Time}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${appt.Reason}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                ${appt.Status}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        /**
+         * Populates dropdown menus in the appointment form.
+         */
+        function populateAppointmentDropdowns() {
+            const patientSelect = document.getElementById('appt-patient');
+            const staffSelect = document.getElementById('appt-staff');
+
+            patientSelect.innerHTML = '<option value="">Select a patient</option>';
+            AppState.patients.forEach(p => {
+                patientSelect.innerHTML += `<option value="${p.PatientID}">${p.FirstName} ${p.LastName} (ID: ${p.PatientID})</option>`;
+            });
+
+            staffSelect.innerHTML = '<option value="">Select staff</option>';
+            AppState.staff.forEach(s => {
+                staffSelect.innerHTML += `<option value="${s.StaffID}">${s.FirstName} ${s.LastName} (${s.Specialty})</option>`;
+            });
+        }
+
+        /**
+         * Updates the dashboard statistics.
+         */
+        function updateDashboardStats() {
+            document.getElementById('stat-total-patients').textContent = AppState.patients.length;
+            document.getElementById('stat-total-staff').textContent = AppState.staff.length;
+            
+            // Calculate today's appointments
+            const today = new Date().toLocaleDateString();
+            const todayAppts = AppState.appointments.filter(appt => 
+                new Date(appt.Date).toLocaleDateString() === today && appt.Status === 'Scheduled'
+            ).length;
+            document.getElementById('stat-today-appointments').textContent = todayAppts;
+        }
+
+        // --- FORM HANDLERS ---
+
+        /**
+         * Handles the new patient registration form submission.
+         */
+        async function handleAddPatient(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            
+            const payload = {
+                action: 'addPatient',
+                data: Object.fromEntries(formData.entries())
+            };
+            
+            const result = await postData(payload);
+            if (result) {
+                // !! FIX !!
+                // Convert the lowercase result object from the form (e.g., result.firstName)
+                // to match the uppercase object structure from the sheet (e.g., FirstName)
+                const newPatient = {
+                    PatientID: result.PatientID,
+                    FirstName: result.firstName,
+                    LastName: result.lastName,
+                    DOB: result.dob,
+                    Contact: result.contact,
+                    Address: result.address
+                };
+
+                // Add new *converted* patient to state and re-render
+                AppState.patients.push(newPatient);
+                renderPatientTable();
+                updateDashboardStats();
+                populateAppointmentDropdowns();
+                form.reset();
+            }
+        }
+        document.getElementById('add-patient-form').addEventListener('submit', handleAddPatient);
+
+        /**
+         * Handles the new appointment booking form submission.
+         */
+        async function handleAddAppointment(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            
+            const payload = {
+                action: 'addAppointment',
+                data: Object.fromEntries(formData.entries())
+            };
+            
+            const result = await postData(payload);
+            if (result) {
+                // !! FIX !!
+                // Convert the lowercase/camelCase result object from the form (e.g., result.patientId)
+                // to match the uppercase object structure from the sheet (e.g., PatientID)
+                const newAppointment = {
+                    AppointmentID: result.AppointmentID,
+                    PatientID: result.patientId,
+                    StaffID: result.staffId,
+                    Date: result.date,
+                    Time: result.time,
+                    Reason: result.reason,
+                    Status: result.Status // Status is set by the backend
+                };
+
+                // Add new *converted* appointment to state and re-render
+                AppState.appointments.push(newAppointment);
+                renderAppointmentTable();
+                updateDashboardStats();
+                form.reset();
+            }
+        }
+        document.getElementById('add-appointment-form').addEventListener('submit', handleAddAppointment);
+
+
+        // --- INITIALIZATION ---
+
+        /**
+         * Main function to initialize the application on page load.
+         */
+        async function initializeApp() {
+            if (!GAS_WEB_APP_URL) {
+                showMessage("CRITICAL ERROR: 'GAS_WEB_APP_URL' is not set in the script. Please follow the setup guide.", true);
+                return;
+            }
+
+            showLoader();
+            // Fetch all data in parallel
+            const [patients, staff, appointments] = await Promise.all([
+                fetchData('getPatients'),
+                fetchData('getStaff'),
+                fetchData('getAppointments')
+            ]);
+            
+            AppState.patients = patients || [];
+            AppState.staff = staff || [];
+            AppState.appointments = appointments || [];
+
+            // Render all components with the new data
+            renderPatientTable();
+            renderAppointmentTable();
+            populateAppointmentDropdowns();
+            updateDashboardStats();
+            
+            hideLoader();
+            showMessage('Application loaded successfully.', false);
+        }
+
+        // Run the app
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+    </script>
+</body>
+</html>
+
+
