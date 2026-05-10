@@ -1,0 +1,29 @@
+show dbs
+use college
+
+db.marks.insert({Student_ID:"S101", Name:"Rahul", Subject:"DBMS", Marks:80});
+db.marks.insert({Student_ID:"S101", Name:"Rahul", Subject:"OS", Marks:75});
+db.marks.insert({Student_ID:"S101", Name:"Rahul", Subject:"CN", Marks:85});
+
+db.marks.insert({Student_ID:"S102", Name:"Priya", Subject:"DBMS", Marks:90});
+db.marks.insert({Student_ID:"S102", Name:"Priya", Subject:"OS", Marks:88});
+db.marks.insert({Student_ID:"S102", Name:"Priya", Subject:"CN", Marks:92});
+
+db.marks.insert({Student_ID:"S103", Name:"Amit", Subject:"DBMS", Marks:70});
+db.marks.insert({Student_ID:"S103", Name:"Amit", Subject:"OS", Marks:65});
+
+db.marks.find()
+
+db.marks.mapReduce(
+    function() {
+        emit(this.Student_ID, this.Marks);
+    },
+    function(key, values) {
+        return Array.sum(values);
+    },
+    {
+        out: "TotalMarks"
+    }
+)
+
+db.TotalMarks.find()
